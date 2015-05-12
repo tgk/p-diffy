@@ -59,6 +59,7 @@ img { border: 1px solid #aaa;
 (defn- index-page
   [comparisons]
   (hiccup.page/html5
+   [:title "p-diffy"]
    ;; todo: ensure this file exists as part of generate-files
    (hiccup.page/include-css "style.css")
    (for [[from to rs] (reverse comparisons)]
