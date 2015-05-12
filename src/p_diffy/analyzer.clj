@@ -39,6 +39,8 @@
 
 (def ^:private style-css
   "
+.comparison { clear: both; }
+
 .title { float: left;
          width: 30%; }
 
