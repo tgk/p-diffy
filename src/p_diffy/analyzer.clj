@@ -70,8 +70,7 @@ img { border: 1px solid #aaa;
        [:h2 (.getPath to)]]
       [:div
        {:class "screenshots"}
-       (for [[r-file r-image-comparison-result]
-             (sort-by (comp - :difference second) rs)]
+       (for [[r-file r-image-comparison-result] rs]
          (let [filename (format "%s/%s.png" (.getPath from) (.getPath r-file))
                difference (-> r-image-comparison-result
                               :difference
