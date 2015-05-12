@@ -10,19 +10,25 @@
 
 (defn- folder-pairs
   [^File root-folder]
-  (partition 2 1 (seq (.listFiles root-folder))))
+  (partition 2 1
+             (remove
+              (fn [f] (.contains (.getAbsolutePath f) ".DS_Store"))
+              (seq (.listFiles root-folder)))))
 
 (defn analyze-folders
   "Doesn't traverse sub-dirs."
   [^File from ^File to]
   [from
    to
-   (for [f1 (rest (file-seq to))]
+   (for [f1 (rest (file-seq to))
+         :when (.endsWith (.getName f1) ".png")]
      (let [bi1 (ImageIO/read f1)
            f2 (File. from (.getName f1))
            bi2 (if (.exists f2)
                  (ImageIO/read f2)
-                 (BufferedImage. 0 0 BufferedImage/TYPE_INT_RGB))]
+                 (BufferedImage. (.getWidth bi1)
+                                 (.getHeight bi1)
+                                 BufferedImage/TYPE_INT_RGB))]
        [f1 (diff/compare-images bi1 bi2)]))])
 
 ;;; /index.html           html
@@ -97,17 +103,25 @@ img { border: 1px solid #aaa;
                          "png"
                          outfile))))))
 
+(defn- generate-comparisons
+  [folder]
+  (map
+   (partial apply analyze-folders)
+   (folder-pairs (File. folder))))
+
+(defn -main
+  [& args]
+  (-> "uswitch"
+      generate-comparisons
+      generate-files))
+
 (comment
 
   (def comparisons
-    (map
-     (partial apply analyze-folders)
-     (folder-pairs (File. "uswitch"))))
+    (generate-comparisons "uswitch"))
 
   (generate-files comparisons)
 
-  (first comparisons)
-
-  (keys (buffered-image-route-map comparisons))
+  (-main)
 
   )
