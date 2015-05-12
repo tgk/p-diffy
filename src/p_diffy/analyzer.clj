@@ -31,13 +31,36 @@
 ;; comparisons always refers to a sequence of [from to [ImageComparisonResult]]
 ;; might want to pack FolderComparison in a record
 
+(def ^:private style-css
+  "
+.title { float: left;
+         width: 30%; }
+
+.screenshots { float: right;
+               width: 70%; }
+
+h2 { font-family: Helvetica;
+     color: #aaa;
+     float: right;
+     padding-right: 10px;}
+
+img { border: 1px solid #aaa;
+      margin: 2px; }
+")
+
 (defn- index-page
   [comparisons]
   (hiccup.page/html5
+   ;; todo: ensure this file exists as part of generate-files
+   (hiccup.page/include-css "style.css")
    (for [[from to rs] (reverse comparisons)]
      [:div
-      (cons
-       [:h2 (.getPath to)]
+      {:class "comparison"}
+      [:div
+       {:class "title"}
+       [:h2 (.getPath to)]]
+      [:div
+       {:class "screenshots"}
        (for [[r-file r-image-comparison-result]
              (sort-by (comp - :difference second) rs)]
          (let [filename (format "%s/%s.png" (.getPath from) (.getPath r-file))
@@ -52,14 +75,16 @@
              {:src filename
               :width "200px"
               :style "padding: 10px"
-              :data-difference difference}]])))])))
+              :data-difference difference}]]))]])))
 
 (defn generate-files
   [comparisons]
-  (let [index-filename "static/index.html"]
+  (let [index-filename "static/index.html"
+        css-filename "static/style.css"]
     (clojure.java.io/make-parents index-filename)
     (spit index-filename
           (index-page comparisons))
+    (spit css-filename style-css)
     (doseq [[from to rs] comparisons]
       (doseq [[r-file r-image-comparison-result] rs]
         ;; TODO: this path generation should be split out and not depend
