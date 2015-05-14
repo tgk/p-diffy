@@ -105,7 +105,7 @@ img { border: 1px solid #aaa;
                          "png"
                          outfile))))))
 
-(defn- generate-comparisons
+(defn generate-comparisons
   [folder]
   (map
    (partial apply analyze-folders)
