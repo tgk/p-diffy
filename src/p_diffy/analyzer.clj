@@ -15,10 +15,16 @@
               (fn [f] (.contains (.getAbsolutePath f) ".DS_Store"))
               (seq (.listFiles root-folder)))))
 
+(defrecord FileComparisonResult [from-file to-file
+                                 image-comparison-result])
+
+(defrecord FolderComparison [from to file-comparison-results])
+
 (defn analyze-folders
-  "Doesn't traverse sub-dirs."
+  "Doesn't traverse sub-dirs. Returns a FolderComparison."
   [^File from ^File to]
-  [from
+  (FolderComparison.
+   from
    to
    (for [f1 (rest (file-seq to))
          :when (.endsWith (.getName f1) ".png")]
@@ -29,13 +35,10 @@
                  (BufferedImage. (.getWidth bi1)
                                  (.getHeight bi1)
                                  BufferedImage/TYPE_INT_RGB))]
-       [f1 (diff/compare-images bi1 bi2)]))])
+       (FileComparisonResult. f2 f1 (diff/compare-images bi1 bi2))))))
 
 ;;; /index.html           html
 ;;; /from/to/to-file-name buffered-image
-
-;; comparisons always refers to a sequence of [from to [ImageComparisonResult]]
-;; might want to pack FolderComparison in a record
 
 (def ^:private style-css
   "
@@ -62,17 +65,19 @@ img { border: 1px solid #aaa;
    [:title "p-diffy"]
    ;; todo: ensure this file exists as part of generate-files
    (hiccup.page/include-css "style.css")
-   (for [[from to rs] (reverse comparisons)]
+   (for [c (reverse comparisons)]
      [:div
       {:class "comparison"}
       [:div
        {:class "title"}
-       [:h2 (.getPath to)]]
+       [:h2 (.getPath (:to c))]]
       [:div
        {:class "screenshots"}
-       (for [[r-file r-image-comparison-result] rs]
-         (let [filename (format "%s/%s.png" (.getPath from) (.getPath r-file))
-               difference (-> r-image-comparison-result
+       (for [fcr (:file-comparison-results c)]
+         (let [filename (format "%s/%s.png"
+                                (.getPath (:from c))
+                                (.getPath (:from-file fcr)))
+               difference (-> (:image-comparison-result fcr)
                               :difference
                               (* 100)
                               int
@@ -93,15 +98,15 @@ img { border: 1px solid #aaa;
     (spit index-filename
           (index-page comparisons))
     (spit css-filename style-css)
-    (doseq [[from to rs] comparisons]
-      (doseq [[r-file r-image-comparison-result] rs]
+    (doseq [c comparisons]
+      (doseq [fcr (:file-comparison-results c)]
         ;; TODO: this path generation should be split out and not depend
         ;; on `from` in the same manner
         (let [outfile (File. (format "static/%s/%s.png"
-                                     (.getPath from)
-                                     (.getPath r-file)))]
+                                     (.getPath (:from c))
+                                     (.getPath (:from-file fcr))))]
           (clojure.java.io/make-parents outfile)
-          (ImageIO/write (:bufferedImage r-image-comparison-result)
+          (ImageIO/write (:bufferedImage (:image-comparison-result fcr))
                          "png"
                          outfile))))))
 
