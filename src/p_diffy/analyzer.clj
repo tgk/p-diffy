@@ -91,9 +91,11 @@ img { border: 1px solid #aaa;
               :data-difference difference}]]))]])))
 
 (defn generate-files
-  [comparisons]
-  (let [index-filename "static/index.html"
-        css-filename "static/style.css"]
+  [comparisons folder]
+  (println folder)
+  (println (str folder "index.html"))
+  (let [index-filename (str folder "index.html")
+        css-filename (str folder "style.css")]
     (clojure.java.io/make-parents index-filename)
     (spit index-filename
           (index-page comparisons))
@@ -102,7 +104,8 @@ img { border: 1px solid #aaa;
       (doseq [fcr (:file-comparison-results c)]
         ;; TODO: this path generation should be split out and not depend
         ;; on `from` in the same manner
-        (let [outfile (File. (format "static/%s/%s.png"
+        (let [outfile (File. (format "%s/%s/%s.png"
+                                     folder
                                      (.getPath (:from c))
                                      (.getPath (:from-file fcr))))]
           (clojure.java.io/make-parents outfile)
@@ -115,20 +118,3 @@ img { border: 1px solid #aaa;
   (map
    (partial apply analyze-folders)
    (folder-pairs (File. folder))))
-
-(defn -main
-  [& args]
-  (-> "uswitch"
-      generate-comparisons
-      generate-files))
-
-(comment
-
-  (def comparisons
-    (generate-comparisons "uswitch"))
-
-  (generate-files comparisons)
-
-  (-main)
-
-  )
